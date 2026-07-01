@@ -1,22 +1,76 @@
 version: 0.2
 
+# =====================================================
+# HomeEase - AWS CodeBuild Buildspec
+# Builds & pushes Docker images to Amazon ECR
+# =====================================================
+
+env:
+  variables:
+    AWS_REGION: "ap-south-1"
+    AWS_ACCOUNT_ID: "226236025590"
+    BACKEND_REPO_NAME: "homeease-backend"
+    FRONTEND_REPO_NAME: "homeease-frontend"
+  parameter-store:
+    MONGO_URI: "/homeease/MONGO_URI"
+    JWT_SECRET: "/homeease/JWT_SECRET"
+    RAZORPAY_KEY_ID: "/homeease/RAZORPAY_KEY_ID"
+    RAZORPAY_KEY_SECRET: "/homeease/RAZORPAY_KEY_SECRET"
+
 phases:
-pre_build:
-commands:
-- aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 226236025590.dkr.ecr.ap-south-1.amazonaws.com
 
-build:
-commands:
-- docker build -t homeservice-backend-v2 ./backend
-- docker build -t homeservice-frontend-v2 ./frontend
+  pre_build:
+    commands:
+      - echo "=== HomeEase Build Started at $(date) ==="
+      - echo "Build Number - $CODEBUILD_BUILD_NUMBER"
+      - echo "Commit SHA    - $CODEBUILD_RESOLVED_SOURCE_VERSION"
 
-```
-  - docker tag homeservice-backend-v2:latest 226236025590.dkr.ecr.ap-south-1.amazonaws.com/homeservice-backend-v2:latest
+      # Set image tag from commit SHA (first 8 chars)
+      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-8)
+      - export BACKEND_ECR_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$BACKEND_REPO_NAME
+      - export FRONTEND_ECR_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$FRONTEND_REPO_NAME
 
-  - docker tag homeservice-frontend-v2:latest 226236025590.dkr.ecr.ap-south-1.amazonaws.com/homeservice-frontend-v2:latest
-```
+      # Authenticate Docker with ECR
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-post_build:
-commands:
-- docker push 226236025590.dkr.ecr.ap-south-1.amazonaws.com/homeservice-backend-v2:latest
-- docker push 226236025590.dkr.ecr.ap-south-1.amazonaws.com/homeservice-frontend-v2:latest
+      # Print tool versions
+      - docker --version
+      - aws --version
+
+  build:
+    commands:
+      - echo "=== Building Backend Docker Image ==="
+      - docker build -t $BACKEND_ECR_URI:$IMAGE_TAG -t $BACKEND_ECR_URI:latest ./backend
+
+      - echo "=== Building Frontend Docker Image ==="
+      - docker build -t $FRONTEND_ECR_URI:$IMAGE_TAG -t $FRONTEND_ECR_URI:latest ./frontend
+
+      - echo "=== Verifying Built Images ==="
+      - docker images | grep homeease
+
+  post_build:
+    commands:
+      - echo "=== Pushing Backend Image to ECR ==="
+      - docker push $BACKEND_ECR_URI:$IMAGE_TAG
+      - docker push $BACKEND_ECR_URI:latest
+
+      - echo "=== Pushing Frontend Image to ECR ==="
+      - docker push $FRONTEND_ECR_URI:$IMAGE_TAG
+      - docker push $FRONTEND_ECR_URI:latest
+
+      - echo "=== Writing imagedefinitions.json for ECS deployment ==="
+      - |
+        printf '[
+          {"name":"homeease-backend","imageUri":"%s:%s"},
+          {"name":"homeease-frontend","imageUri":"%s:%s"}
+        ]' \
+        "$BACKEND_ECR_URI" "$IMAGE_TAG" \
+        "$FRONTEND_ECR_URI" "$IMAGE_TAG" > imagedefinitions.json
+
+      - cat imagedefinitions.json
+      - echo "=== Build Completed at $(date) ==="
+
+artifacts:
+  files:
+    - imagedefinitions.json

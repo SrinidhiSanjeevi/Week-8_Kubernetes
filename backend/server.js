@@ -19,7 +19,12 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Backend Running");
+  res.send("HomeEase Backend Running");
+});
+
+// Health check endpoint - used by Docker, ALB, and ECS
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok", service: "homeease-backend", timestamp: new Date().toISOString() });
 });
 
 app.use("/api/auth", require("./routes/authRoutes"));
