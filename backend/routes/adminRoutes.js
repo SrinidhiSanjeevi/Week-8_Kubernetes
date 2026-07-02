@@ -9,19 +9,43 @@ const {
   getAllBookings,
   updateBookingStatus,
   getAllServices,
+  createService,
+  updateService,
+  deleteService,
   getAllProfessionals,
+  createProfessional,
+  updateProfessional,
+  deleteProfessional,
   getAllEmergencies,
 } = require("../controllers/adminController");
 
-// All admin routes are protected by both protect + adminOnly middleware
+// All routes are protected by JWT auth + admin role check
+const guard = [protect, adminOnly];
 
-router.get("/stats",          protect, adminOnly, getStats);
-router.get("/users",          protect, adminOnly, getAllUsers);
-router.delete("/users/:id",   protect, adminOnly, deleteUser);
-router.get("/bookings",       protect, adminOnly, getAllBookings);
-router.put("/bookings/:id/status", protect, adminOnly, updateBookingStatus);
-router.get("/services",       protect, adminOnly, getAllServices);
-router.get("/professionals",  protect, adminOnly, getAllProfessionals);
-router.get("/emergencies",    protect, adminOnly, getAllEmergencies);
+// Stats
+router.get("/stats",                    ...guard, getStats);
+
+// Users
+router.get("/users",                    ...guard, getAllUsers);
+router.delete("/users/:id",             ...guard, deleteUser);
+
+// Bookings
+router.get("/bookings",                 ...guard, getAllBookings);
+router.put("/bookings/:id/status",      ...guard, updateBookingStatus);
+
+// Services (full CRUD)
+router.get("/services",                 ...guard, getAllServices);
+router.post("/services",                ...guard, createService);
+router.put("/services/:id",             ...guard, updateService);
+router.delete("/services/:id",          ...guard, deleteService);
+
+// Professionals (full CRUD)
+router.get("/professionals",            ...guard, getAllProfessionals);
+router.post("/professionals",           ...guard, createProfessional);
+router.put("/professionals/:id",        ...guard, updateProfessional);
+router.delete("/professionals/:id",     ...guard, deleteProfessional);
+
+// Emergencies
+router.get("/emergencies",              ...guard, getAllEmergencies);
 
 module.exports = router;

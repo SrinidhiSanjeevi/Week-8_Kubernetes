@@ -170,6 +170,90 @@ const getAllEmergencies = async (req, res) => {
   }
 };
 
+// ──────────────────────────────────────────────────────
+// POST /api/admin/services  — Create a new service
+// ──────────────────────────────────────────────────────
+const createService = async (req, res) => {
+  try {
+    const { name, category, price, description, image, duration, products } = req.body;
+    if (!name || !category || !price || !description || !image || !duration) {
+      return res.status(400).json({ success: false, message: "All required fields must be provided" });
+    }
+    const service = await Service.create({ name, category, price, description, image, duration, products: products || [] });
+    res.status(201).json({ success: true, message: "Service created successfully", service });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ──────────────────────────────────────────────────────
+// PUT /api/admin/services/:id  — Update a service
+// ──────────────────────────────────────────────────────
+const updateService = async (req, res) => {
+  try {
+    const service = await Service.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!service) return res.status(404).json({ success: false, message: "Service not found" });
+    res.status(200).json({ success: true, message: "Service updated successfully", service });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ──────────────────────────────────────────────────────
+// DELETE /api/admin/services/:id  — Delete a service
+// ──────────────────────────────────────────────────────
+const deleteService = async (req, res) => {
+  try {
+    const service = await Service.findByIdAndDelete(req.params.id);
+    if (!service) return res.status(404).json({ success: false, message: "Service not found" });
+    res.status(200).json({ success: true, message: "Service deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ──────────────────────────────────────────────────────
+// POST /api/admin/professionals  — Create a professional
+// ──────────────────────────────────────────────────────
+const createProfessional = async (req, res) => {
+  try {
+    const { name, category, experience, image, status } = req.body;
+    if (!name || !category || !experience || !image) {
+      return res.status(400).json({ success: false, message: "name, category, experience and image are required" });
+    }
+    const professional = await Professional.create({ name, category, experience, image, status: status || "Available" });
+    res.status(201).json({ success: true, message: "Professional added successfully", professional });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ──────────────────────────────────────────────────────
+// PUT /api/admin/professionals/:id  — Update a professional
+// ──────────────────────────────────────────────────────
+const updateProfessional = async (req, res) => {
+  try {
+    const professional = await Professional.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!professional) return res.status(404).json({ success: false, message: "Professional not found" });
+    res.status(200).json({ success: true, message: "Professional updated successfully", professional });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ──────────────────────────────────────────────────────
+// DELETE /api/admin/professionals/:id  — Delete a professional
+// ──────────────────────────────────────────────────────
+const deleteProfessional = async (req, res) => {
+  try {
+    const professional = await Professional.findByIdAndDelete(req.params.id);
+    if (!professional) return res.status(404).json({ success: false, message: "Professional not found" });
+    res.status(200).json({ success: true, message: "Professional deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getStats,
   getAllUsers,
@@ -177,6 +261,13 @@ module.exports = {
   getAllBookings,
   updateBookingStatus,
   getAllServices,
+  createService,
+  updateService,
+  deleteService,
   getAllProfessionals,
+  createProfessional,
+  updateProfessional,
+  deleteProfessional,
   getAllEmergencies,
 };
+
