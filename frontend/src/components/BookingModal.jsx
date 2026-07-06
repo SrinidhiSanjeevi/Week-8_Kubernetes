@@ -72,7 +72,7 @@ export default function BookingModal({ service, onClose, onSubmit, professionals
     setStep(step - 1);
   };
 
-  // Launch Razorpay Checkout Flow
+  // Mocked Razorpay Flow
   const handlePaymentInitiate = async (e) => {
     e.preventDefault();
 
@@ -82,86 +82,9 @@ export default function BookingModal({ service, onClose, onSubmit, professionals
       return;
     }
 
-    try {
-      setProcessingPayment(true);
-      
-      // Step 1: Create Razorpay Order in backend
-      const response = await fetch("/api/bookings/razorpay-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ amount: total }),
-      });
-
-      const orderData = await response.json();
-      setProcessingPayment(false);
-
-      if (!response.ok || !orderData.success) {
-        alert(orderData.message || "Failed to initiate payment gateway.");
-        return;
-      }
-
-      if (orderData.isSimulated) {
-        // If credentials are empty, trigger our custom Razorpay simulator modal
-        setRazorpayOrderId(orderData.orderId);
-        setShowRazorpayModal(true);
-      } else {
-        // Invoke official Razorpay SDK popup window
-        const options = {
-          key: orderData.keyId,
-          amount: orderData.amount,
-          currency: orderData.currency,
-          name: "HomeEase Services",
-          description: service.isCustom ? "Custom Request Payment" : service.name,
-          order_id: orderData.orderId,
-          handler: async (response) => {
-            // Verify payment signature in backend
-            const verifyRes = await fetch("/api/bookings/razorpay-verify", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
-
-            const verifyData = await verifyRes.json();
-            if (verifyRes.ok && verifyData.success) {
-              finalizeBooking({
-                method: "Razorpay",
-                status: "Paid",
-                details: {
-                  orderId: response.razorpay_order_id,
-                  paymentId: response.razorpay_payment_id,
-                }
-              });
-            } else {
-              alert("Payment verification failed! Please contact support.");
-            }
-          },
-          prefill: {
-            contact: contactNumber,
-            email: JSON.parse(localStorage.getItem("user"))?.email || "",
-          },
-          theme: {
-            color: "#000000",
-          },
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-      }
-    } catch (err) {
-      setProcessingPayment(false);
-      console.error(err);
-      alert("Payment gateway communication error.");
-    }
+    // Bypass real Razorpay and backend entirely
+    setRazorpayOrderId(`mock_order_${Date.now()}`);
+    setShowRazorpayModal(true);
   };
 
   const handleSimulatedPaymentSuccess = () => {
@@ -646,7 +569,7 @@ export default function BookingModal({ service, onClose, onSubmit, professionals
         </div>
       </div>
 
-      {/* CUSTOM RAZORPAY SIMULATION POPUP */}
+      {/* CUSTOM MOCK PAYMENT POPUP */}
       {showRazorpayModal && (
         <div
           style={{
@@ -686,13 +609,13 @@ export default function BookingModal({ service, onClose, onSubmit, professionals
             >
               <div>
                 <span style={{ fontSize: "0.75rem", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Razorpay Checkout
+                  Mock Payment Setup
                 </span>
-                <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Test Mode Simulator</h3>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Simulate Payment</h3>
               </div>
               <button
                 onClick={() => setShowRazorpayModal(false)}
-                style={{ background: "none", color: "white", padding: 0 }}
+                style={{ background: "none", color: "white", padding: 0, cursor: "pointer", border: "none" }}
               >
                 <X size={18} />
               </button>
@@ -703,9 +626,6 @@ export default function BookingModal({ service, onClose, onSubmit, professionals
               <div style={{ textAlign: "center", marginBottom: "20px" }}>
                 <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Payable Amount</span>
                 <h1 style={{ fontSize: "2rem", fontWeight: 800, margin: "4px 0" }}>₹{total}</h1>
-                <span style={{ fontSize: "0.75rem", background: "#fee2e2", color: "#dc2626", padding: "2px 8px", borderRadius: "4px" }}>
-                  OrderId: {razorpayOrderId}
-                </span>
               </div>
 
               <div
@@ -715,35 +635,51 @@ export default function BookingModal({ service, onClose, onSubmit, professionals
                   padding: "12px",
                   fontSize: "0.85rem",
                   marginBottom: "20px",
+                  textAlign: "center"
                 }}
               >
-                <p style={{ fontWeight: 700, marginBottom: "4px" }}>Test Credentials</p>
-                <p style={{ color: "var(--text-muted)" }}>This simulated gateway validates complete API flow logic when local environment keys are not configured.</p>
+                <p style={{ fontWeight: 700, marginBottom: "4px" }}>No real money involved.</p>
+                <p style={{ color: "var(--text-muted)" }}>Do you want to mark this booking as PAID?</p>
               </div>
 
-              <button
-                onClick={handleSimulatedPaymentSuccess}
-                style={{
-                  width: "100%",
-                  background: "#3399cc",
-                  color: "#ffffff",
-                  height: "46px",
-                  borderRadius: "6px",
-                  fontWeight: 700,
-                  fontSize: "0.95rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                }}
-              >
-                <CheckCircle size={18} /> Complete Mock Payment
-              </button>
-            </div>
-
-            {/* Simulation Footer */}
-            <div style={{ background: "#f8fafc", padding: "12px", textStyle: "center", fontSize: "0.75rem", color: "var(--text-muted)", borderTop: "1px solid #eaeaea", textAlign: "center" }}>
-              Razorpay Secured Gateway Emulator
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  onClick={() => setShowRazorpayModal(false)}
+                  style={{
+                    flex: 1,
+                    background: "#f1f5f9",
+                    color: "#334155",
+                    height: "46px",
+                    borderRadius: "6px",
+                    fontWeight: 700,
+                    fontSize: "0.95rem",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  No, Cancel
+                </button>
+                <button
+                  onClick={handleSimulatedPaymentSuccess}
+                  style={{
+                    flex: 1,
+                    background: "#10b981",
+                    color: "#ffffff",
+                    height: "46px",
+                    borderRadius: "6px",
+                    fontWeight: 700,
+                    fontSize: "0.95rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  <CheckCircle size={18} /> Yes, Paid
+                </button>
+              </div>
             </div>
           </div>
         </div>
