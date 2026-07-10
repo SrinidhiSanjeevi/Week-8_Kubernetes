@@ -1,249 +1,632 @@
-# HomeEase Docker Commands
+# Kubernetes Commands Cheat Sheet
 
-## Check Existing Docker Images
-
-docker images
+This document contains the Kubernetes commands used during the deployment and management of the HomeEase application on a local Minikube cluster.
 
 ---
 
-## Check Running Containers
+# Minikube Commands
 
-docker ps
+## Start Minikube
 
----
+```bash
+minikube start
+```
 
-## Check All Containers
-
-docker ps -a
-
----
-
-# Backend Container
-
-## Build Backend Image
-
-docker build -t homeease-backend:v1 ./backend
+Starts the local Kubernetes cluster.
 
 ---
 
-## Verify Image
+## Check Minikube Status
 
-docker images
+```bash
+minikube status
+```
 
----
+Displays the status of:
 
-## Run Backend Container
-
-docker run -d --name backend-prod1 -p 5000:5000 homeease-backend:v1
-
----
-
-## Check Running Container
-
-docker ps
+- Host
+- Kubelet
+- API Server
+- kubeconfig
 
 ---
 
-## View Backend Logs
+## Stop Minikube
 
-docker logs backend-prod1
+```bash
+minikube stop
+```
 
----
-
-## Stop Backend Container
-
-docker stop backend-prod1
+Stops the Kubernetes cluster while preserving the cluster data.
 
 ---
 
-## Remove Backend Container
+## Delete Minikube Cluster
 
-docker rm backend-prod1
+```bash
+minikube delete
+```
 
----
-
-# Frontend Container
-
-## Build Frontend Image
-
-docker build -t homeease-frontend:v1 ./frontend
+Deletes the entire Kubernetes cluster.
 
 ---
 
-## Verify Image
+## List Images Inside Minikube
 
-docker images
+```bash
+minikube image ls
+```
 
----
-
-## Run Frontend Container
-
-docker run -d --name frontend-prod2 -p 3000:80 homeease-frontend:v1
+Displays all container images available inside the Minikube cluster.
 
 ---
 
-## Check Running Container
+## Load Local Docker Image into Minikube
 
-docker ps
+```bash
+minikube image load homeease-backend:latest
 
----
+minikube image load homeease-frontend:latest
+```
 
-## View Frontend Logs
-
-docker logs frontend-prod2
-
----
-
-## Stop Frontend Container
-
-docker stop frontend-prod2
+Copies locally built Docker images into Minikube.
 
 ---
 
-## Remove Frontend Container
+## Open a Service
 
-docker rm frontend-prod2
+```bash
+minikube service frontend-service
+```
+
+Opens the application in the default browser.
 
 ---
 
-# Docker Compose
+# Cluster Information
 
-## Build All Services
+## View Cluster Information
 
+```bash
+kubectl cluster-info
+```
+
+Displays Kubernetes master and service endpoints.
+
+---
+
+## View Nodes
+
+```bash
+kubectl get nodes
+```
+
+Lists all Worker/Control Plane nodes.
+
+---
+
+## Describe Node
+
+```bash
+kubectl describe node <node-name>
+```
+
+Displays detailed node information.
+
+Example:
+
+```bash
+kubectl describe node minikube
+```
+
+---
+
+# Pod Commands
+
+## Create Pod
+
+```bash
+kubectl apply -f backend-pod.yaml
+```
+
+---
+
+## List Pods
+
+```bash
+kubectl get pods
+```
+
+---
+
+## List Pods with More Information
+
+```bash
+kubectl get pods -o wide
+```
+
+Shows:
+
+- Pod IP
+- Node
+- Internal IP
+
+---
+
+## Watch Pod Status
+
+```bash
+kubectl get pods -w
+```
+
+Continuously watches Pod status.
+
+---
+
+## Describe Pod
+
+```bash
+kubectl describe pod <pod-name>
+```
+
+Example:
+
+```bash
+kubectl describe pod backend-pod
+```
+
+---
+
+## View Pod Logs
+
+```bash
+kubectl logs <pod-name>
+```
+
+Example:
+
+```bash
+kubectl logs backend-pod
+```
+
+---
+
+## Follow Logs
+
+```bash
+kubectl logs -f <pod-name>
+```
+
+Shows logs in real-time.
+
+---
+
+## Enter Pod Shell
+
+```bash
+kubectl exec -it <pod-name> -- sh
+```
+
+Example:
+
+```bash
+kubectl exec -it backend-pod -- sh
+```
+
+---
+
+## Delete Pod
+
+```bash
+kubectl delete pod <pod-name>
+```
+
+---
+
+# Deployment Commands
+
+## Create Deployment
+
+```bash
+kubectl apply -f backend-deployment.yaml
+```
+
+---
+
+## List Deployments
+
+```bash
+kubectl get deployments
+```
+
+---
+
+## Describe Deployment
+
+```bash
+kubectl describe deployment backend-deployment
+```
+
+---
+
+## Scale Deployment
+
+```bash
+kubectl scale deployment backend-deployment --replicas=3
+```
+
+Scale back:
+
+```bash
+kubectl scale deployment backend-deployment --replicas=2
+```
+
+---
+
+## Restart Deployment
+
+```bash
+kubectl rollout restart deployment backend-deployment
+```
+
+---
+
+## Check Rollout Status
+
+```bash
+kubectl rollout status deployment backend-deployment
+```
+
+---
+
+## View Rollout History
+
+```bash
+kubectl rollout history deployment backend-deployment
+```
+
+---
+
+## Rollback Deployment
+
+```bash
+kubectl rollout undo deployment backend-deployment
+```
+
+---
+
+## Delete Deployment
+
+```bash
+kubectl delete deployment backend-deployment
+```
+
+---
+
+# ReplicaSet Commands
+
+## List ReplicaSets
+
+```bash
+kubectl get replicasets
+```
+
+or
+
+```bash
+kubectl get rs
+```
+
+---
+
+## Describe ReplicaSet
+
+```bash
+kubectl describe rs <replicaset-name>
+```
+
+---
+
+# Service Commands
+
+## Create Service
+
+```bash
+kubectl apply -f backend-service.yaml
+```
+
+---
+
+## List Services
+
+```bash
+kubectl get services
+```
+
+---
+
+## Describe Service
+
+```bash
+kubectl describe service backend-service
+```
+
+---
+
+## Delete Service
+
+```bash
+kubectl delete service backend-service
+```
+
+---
+
+# ConfigMap Commands
+
+## Create ConfigMap
+
+```bash
+kubectl apply -f backend-configmap.yaml
+```
+
+---
+
+## List ConfigMaps
+
+```bash
+kubectl get configmaps
+```
+
+---
+
+## Describe ConfigMap
+
+```bash
+kubectl describe configmap backend-config
+```
+
+---
+
+## Delete ConfigMap
+
+```bash
+kubectl delete configmap backend-config
+```
+
+---
+
+# Secret Commands
+
+## Create Secret
+
+```bash
+kubectl apply -f backend-secret.yaml
+```
+
+---
+
+## List Secrets
+
+```bash
+kubectl get secrets
+```
+
+---
+
+## Describe Secret
+
+```bash
+kubectl describe secret backend-secret
+```
+
+---
+
+## Delete Secret
+
+```bash
+kubectl delete secret backend-secret
+```
+
+---
+
+# Namespace Commands
+
+## List Namespaces
+
+```bash
+kubectl get namespaces
+```
+
+---
+
+## Create Namespace
+
+```bash
+kubectl create namespace dev
+```
+
+---
+
+## Delete Namespace
+
+```bash
+kubectl delete namespace dev
+```
+
+---
+
+# Resource Commands
+
+## Display Everything
+
+```bash
+kubectl get all
+```
+
+---
+
+## Delete All Resources from YAML
+
+```bash
+kubectl delete -f kubernetes/
+```
+
+---
+
+## Apply All YAML Files
+
+```bash
+kubectl apply -f kubernetes/
+```
+
+---
+
+## Reapply Updated Configuration
+
+```bash
+kubectl apply -f backend-deployment.yaml
+```
+
+---
+
+# Debugging Commands
+
+## View Events
+
+```bash
+kubectl get events
+```
+
+---
+
+## Sort Events
+
+```bash
+kubectl get events --sort-by=.metadata.creationTimestamp
+```
+
+---
+
+## Show Resource Usage (Requires Metrics Server)
+
+```bash
+kubectl top pods
+
+kubectl top nodes
+```
+
+---
+
+# Docker Commands Used with Kubernetes
+
+## Build Images
+
+```bash
 docker compose build
+```
 
 ---
 
-## Build and Run Services Together
+## Build Without Cache
 
-docker compose up --build
-
----
-
-## Start Existing Services
-
-docker compose up -d
+```bash
+docker compose build --no-cache
+```
 
 ---
 
-## View Compose Services
+## List Images
 
-docker compose ps
-
----
-
-## View All Compose Logs
-
-docker compose logs
+```bash
+docker images
+```
 
 ---
 
-## View Backend Logs
+## Remove Image
 
-docker compose logs backend
+```bash
+docker rmi homeease-backend:latest
 
----
-
-## View Frontend Logs
-
-docker compose logs frontend
+docker rmi homeease-frontend:latest
+```
 
 ---
 
-## Stop and Remove All Compose Services
+## Remove Container
 
+```bash
+docker rm -f <container-id>
+```
+
+---
+
+## Run Docker Compose
+
+```bash
+docker compose up
+```
+
+---
+
+## Stop Docker Compose
+
+```bash
 docker compose down
+```
 
 ---
 
-# Docker Networking
+# Typical Development Workflow
 
-## List Networks
-
-docker network ls
-
----
-
-## Inspect HomeEase Network
-
-docker network inspect homeease-net
-
----
-
-# Docker Hub
-
-## Login
-
-docker login
-
----
-
-## Tag Backend Image
-
-docker tag homeease-backend:v1 srinidhisanjeevi/homeease-backend:v1
+```text
+Modify Application Code
+        │
+        ▼
+docker compose build
+        │
+        ▼
+minikube image load
+        │
+        ▼
+kubectl apply -f kubernetes/
+        │
+        ▼
+kubectl get pods
+        │
+        ▼
+kubectl logs
+        │
+        ▼
+minikube service frontend-service
+```
 
 ---
 
-## Push Backend Image
+# Frequently Used Commands
 
-docker push srinidhisanjeevi/homeease-backend:v1
+```bash
+kubectl get nodes
+kubectl get pods
+kubectl get deployments
+kubectl get services
+kubectl get replicasets
+kubectl get configmaps
+kubectl get secrets
+kubectl get all
 
----
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+kubectl exec -it <pod-name> -- sh
 
-## Pull Backend Image
+kubectl rollout restart deployment backend-deployment
+kubectl rollout status deployment backend-deployment
+kubectl rollout history deployment backend-deployment
+kubectl rollout undo deployment backend-deployment
 
-docker pull srinidhisanjeevi/homeease-backend:v1
-
----
-
-## Tag Frontend Image
-
-docker tag homeease-frontend:v1 srinidhisanjeevi/homeease-frontend:v1
-
----
-
-## Push Frontend Image
-
-docker push srinidhisanjeevi/homeease-frontend:v1
-
----
-
-## Pull Frontend Image
-
-docker pull srinidhisanjeevi/homeease-frontend:v1
-
----
-
-# Docker Cleanup
-
-## Show Docker Disk Usage
-
-docker system df
-
----
-
-## Remove Unused Docker Resources
-
-docker system prune
-
----
-
-## Remove All Unused Docker Resources Including Images
-
-docker system prune -a
-
----
-
-# Application URLs
-
-Frontend
-
-http://localhost:3000
-
-Backend
-
-http://localhost:5000
-
-Backend Health Check
-
-http://localhost:5000/api/health
+minikube start
+minikube status
+minikube stop
+minikube service frontend-service
+docker compose build
+```
