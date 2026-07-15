@@ -1338,3 +1338,67 @@ Backend Service
 
 ---
 
+# Project Work Flow
+
+
+
+
+Browser
+      │
+      ▼
+NodePort
+
+Frontend Service
+
+      │
+      ▼
+Frontend Pod
+
+      │
+
+fetch("/api")
+
+      │
+      ▼
+NGINX Reverse Proxy
+
+      │
+
+proxy_pass http://backend-service:5000
+
+      │
+      ▼
+CoreDNS
+
+Resolve
+
+backend-service
+
+↓
+
+10.107.66.8
+
+      │
+      ▼
+kube-proxy
+
+      │
+Reads EndpointSlice
+
+      │
+      ▼
+Backend Pod
+
+      │
+      ▼
+MongoDB Atlas
+
+      │
+Response
+
+      │
+NGINX
+
+      │
+Browser
+
