@@ -1,129 +1,81 @@
-# Kubernetes Commands Cheat Sheet
+# Kubernetes Networking Demo – HomeEase
 
-This document contains the Kubernetes commands used during the deployment and management of the HomeEase application on a local Minikube cluster.
+# Objective
+
+Demonstrate how a multi-tier application communicates inside a Kubernetes cluster and understand why Kubernetes provides Deployments, Services, Ingress, and Network Policies.
 
 ---
 
-# Minikube Commands
+# Phase 1 – Start Kubernetes Cluster
 
 ## Start Minikube
 
 ```bash
-minikube start
+minikube start --driver=docker
 ```
 
-Starts the local Kubernetes cluster.
+Explain
+
+- Starts the Kubernetes cluster.
+- Creates the Control Plane.
+- Configures kubectl automatically.
+- Starts kubelet, API Server, Scheduler, Controller Manager and etcd.
 
 ---
 
-## Check Minikube Status
+## Verify Cluster
 
 ```bash
 minikube status
 ```
 
-Displays the status of:
+Expected
 
-- Host
-- Kubelet
-- API Server
-- kubeconfig
-
----
-
-## Stop Minikube
-
-```bash
-minikube stop
+```
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
 ```
 
-Stops the Kubernetes cluster while preserving the cluster data.
-
 ---
 
-## Delete Minikube Cluster
-
-```bash
-minikube delete
-```
-
-Deletes the entire Kubernetes cluster.
-
----
-
-## List Images Inside Minikube
-
-```bash
-minikube image ls
-```
-
-Displays all container images available inside the Minikube cluster.
-
----
-
-## Load Local Docker Image into Minikube
-
-```bash
-minikube image load homeease-backend:latest
-
-minikube image load homeease-frontend:latest
-```
-
-Copies locally built Docker images into Minikube.
-
----
-
-## Open a Service
-
-```bash
-minikube service frontend-service
-```
-
-Opens the application in the default browser.
-
----
-
-# Cluster Information
-
-## View Cluster Information
-
-```bash
-kubectl cluster-info
-```
-
-Displays Kubernetes master and service endpoints.
-
----
-
-## View Nodes
+## Verify Nodes
 
 ```bash
 kubectl get nodes
 ```
 
-Lists all Worker/Control Plane nodes.
+Explain
+
+- Shows worker nodes.
+- Minikube has one node.
 
 ---
 
-## Describe Node
+## Check Kubernetes Components
 
 ```bash
-kubectl describe node <node-name>
+kubectl get pods -n kube-system
 ```
 
-Displays detailed node information.
+Explain
 
-Example:
-
-```bash
-kubectl describe node minikube
+```
+kube-apiserver
+etcd
+kube-controller-manager
+kube-scheduler
+kube-proxy
+coredns
+storage-provisioner
 ```
 
 ---
 
-# Pod Commands
+# Phase 2 – Pod Networking
 
-## Create Pod
+## Create Backend Pod
 
 ```bash
 kubectl apply -f backend-pod.yaml
@@ -131,7 +83,15 @@ kubectl apply -f backend-pod.yaml
 
 ---
 
-## List Pods
+## Create Frontend Pod
+
+```bash
+kubectl apply -f frontend-pod.yaml
+```
+
+---
+
+## View Pods
 
 ```bash
 kubectl get pods
@@ -139,101 +99,86 @@ kubectl get pods
 
 ---
 
-## List Pods with More Information
+## View Pod IP Addresses
 
 ```bash
 kubectl get pods -o wide
 ```
 
-Shows:
+Explain
 
-- Pod IP
-- Node
-- Internal IP
+- Every Pod gets its own IP.
+- IPs are assigned by the CNI plugin.
+- Pods communicate using Pod IPs.
+- Containers inside the same Pod communicate using localhost.
 
 ---
 
-## Watch Pod Status
+## Watch Pods
 
 ```bash
 kubectl get pods -w
 ```
 
-Continuously watches Pod status.
+Explain
+
+- Continuously watches Pod lifecycle.
+- Useful for showing self-healing later.
 
 ---
 
-## Describe Pod
+# Phase 3 – Problem with Pods
+
+Delete backend Pod
 
 ```bash
-kubectl describe pod <pod-name>
+kubectl delete pod backend-pod
 ```
 
-Example:
+Explain
+
+- Pod disappears.
+- Since it is a standalone Pod, Kubernetes will not recreate it.
+- Recreate it manually.
 
 ```bash
-kubectl describe pod backend-pod
+kubectl apply -f backend-pod.yaml
 ```
+
+Check IP
+
+```bash
+kubectl get pods -o wide
+```
+
+Explain
+
+Old IP
+
+↓
+
+New IP
+
+Problem
+
+Frontend still knows old IP.
+
+Communication breaks.
 
 ---
 
-## View Pod Logs
+# Phase 4 – Deployments
 
-```bash
-kubectl logs <pod-name>
-```
-
-Example:
-
-```bash
-kubectl logs backend-pod
-```
-
----
-
-## Follow Logs
-
-```bash
-kubectl logs -f <pod-name>
-```
-
-Shows logs in real-time.
-
----
-
-## Enter Pod Shell
-
-```bash
-kubectl exec -it <pod-name> -- sh
-```
-
-Example:
-
-```bash
-kubectl exec -it backend-pod -- sh
-```
-
----
-
-## Delete Pod
-
-```bash
-kubectl delete pod <pod-name>
-```
-
----
-
-# Deployment Commands
-
-## Create Deployment
+Create Deployment
 
 ```bash
 kubectl apply -f backend-deployment.yaml
+kubectl apply -f frontend-deployment.yaml
 ```
 
 ---
 
-## List Deployments
+View Deployments
 
 ```bash
 kubectl get deployments
@@ -241,145 +186,75 @@ kubectl get deployments
 
 ---
 
-## Describe Deployment
-
-```bash
-kubectl describe deployment backend-deployment
-```
-
----
-
-## Scale Deployment
-
-```bash
-kubectl scale deployment backend-deployment --replicas=3
-```
-
-Scale back:
-
-```bash
-kubectl scale deployment backend-deployment --replicas=2
-```
-
----
-
-## Restart Deployment
-
-```bash
-kubectl rollout restart deployment backend-deployment
-```
-
----
-
-## Check Rollout Status
-
-```bash
-kubectl rollout status deployment backend-deployment
-```
-
----
-
-## View Rollout History
-
-```bash
-kubectl rollout history deployment backend-deployment
-```
-
----
-
-## Rollback Deployment
-
-```bash
-kubectl rollout undo deployment backend-deployment
-```
-
----
-
-## Delete Deployment
-
-```bash
-kubectl delete deployment backend-deployment
-```
-
----
-
-# ReplicaSet Commands
-
-## List ReplicaSets
+View ReplicaSets
 
 ```bash
 kubectl get replicasets
 ```
 
-or
+---
+
+View Pods
 
 ```bash
-kubectl get rs
+kubectl get pods
 ```
+
+Explain
+
+Deployment
+
+↓
+
+ReplicaSet
+
+↓
+
+Pods
 
 ---
 
-## Describe ReplicaSet
+Delete One Backend Pod
 
 ```bash
-kubectl describe rs <replicaset-name>
+kubectl delete pod <backend-pod-name>
 ```
+
+Watch
+
+```bash
+kubectl get pods -w
+```
+
+Explain
+
+Deployment automatically creates a new Pod.
+
+Self-healing achieved.
+
+But
+
+New Pod gets a different IP.
+
+Networking problem still exists.
 
 ---
 
-# Service Commands
+# Phase 5 – ConfigMap & Secret
 
-## Create Service
-
-```bash
-kubectl apply -f backend-service.yaml
-```
-
----
-
-## List Services
-
-```bash
-kubectl get services
-```
-
----
-
-## Describe Service
-
-```bash
-kubectl describe service backend-service
-```
-
----
-
-## Delete Service
-
-```bash
-kubectl delete service backend-service
-```
-
----
-
-# ConfigMap Commands
-
-## Create ConfigMap
+Create ConfigMap
 
 ```bash
 kubectl apply -f backend-configmap.yaml
 ```
 
----
-
-## List ConfigMaps
+Check
 
 ```bash
 kubectl get configmaps
 ```
 
----
-
-## Describe ConfigMap
+Describe
 
 ```bash
 kubectl describe configmap backend-config
@@ -387,33 +262,19 @@ kubectl describe configmap backend-config
 
 ---
 
-## Delete ConfigMap
-
-```bash
-kubectl delete configmap backend-config
-```
-
----
-
-# Secret Commands
-
-## Create Secret
+Create Secret
 
 ```bash
 kubectl apply -f backend-secret.yaml
 ```
 
----
-
-## List Secrets
+Check
 
 ```bash
 kubectl get secrets
 ```
 
----
-
-## Describe Secret
+Describe
 
 ```bash
 kubectl describe secret backend-secret
@@ -421,43 +282,309 @@ kubectl describe secret backend-secret
 
 ---
 
-## Delete Secret
+Restart Deployment
 
 ```bash
-kubectl delete secret backend-secret
+kubectl rollout restart deployment backend-deployment
 ```
 
 ---
 
-# Namespace Commands
-
-## List Namespaces
+Verify Environment Variables
 
 ```bash
-kubectl get namespaces
+kubectl exec -it <backend-pod> -- printenv
 ```
 
 ---
 
-## Create Namespace
+# Phase 6 – Services
+
+Create Backend Service
 
 ```bash
-kubectl create namespace dev
+kubectl apply -f backend-service.yaml
+```
+
+Create Frontend Service
+
+```bash
+kubectl apply -f frontend-service.yaml
 ```
 
 ---
 
-## Delete Namespace
+View Services
 
 ```bash
-kubectl delete namespace dev
+kubectl get svc
+```
+
+Explain
+
+Frontend
+
+NodePort
+
+Backend
+
+ClusterIP
+
+---
+
+Describe Backend Service
+
+```bash
+kubectl describe svc backend-service
+```
+
+Explain
+
+Selector
+
+↓
+
+ClusterIP
+
+↓
+
+Endpoints
+
+---
+
+View Endpoints
+
+```bash
+kubectl get endpoints
 ```
 
 ---
 
-# Resource Commands
+View EndpointSlices
 
-## Display Everything
+```bash
+kubectl get endpointslice
+```
+
+Explain
+
+Service selects Pods using labels.
+
+EndpointSlice stores healthy Pod IPs.
+
+---
+
+Delete Backend Pod Again
+
+```bash
+kubectl delete pod <backend-pod>
+```
+
+Watch
+
+```bash
+kubectl get pods -w
+```
+
+Check EndpointSlice
+
+```bash
+kubectl get endpointslice
+```
+
+Explain
+
+Pod recreated
+
+↓
+
+EndpointSlice updated
+
+↓
+
+Frontend continues working
+
+because
+
+Frontend knows
+
+backend-service
+
+NOT
+
+Pod IP.
+
+---
+
+# Phase 7 – Scaling
+
+Scale Backend
+
+```bash
+kubectl scale deployment backend-deployment --replicas=5
+```
+
+Verify
+
+```bash
+kubectl get deployments
+```
+
+Verify Pods
+
+```bash
+kubectl get pods
+```
+
+Explain
+
+Deployment creates five Pods.
+
+Service automatically updates EndpointSlice.
+
+No frontend changes.
+
+---
+
+# Phase 8 – Ingress
+
+Create Ingress
+
+```bash
+kubectl apply -f ingress.yaml
+```
+
+View
+
+```bash
+kubectl get ingress
+```
+
+Explain
+
+Ingress provides
+
+Single Entry Point
+
+Routes
+
+```
+/
+```
+
+↓
+
+Frontend
+
+```
+/api
+```
+
+↓
+
+Backend
+
+---
+
+# Phase 9 – Network Policy
+
+Create Policy
+
+```bash
+kubectl apply -f backend-networkpolicy.yaml
+```
+
+View
+
+```bash
+kubectl get networkpolicy
+```
+
+Describe
+
+```bash
+kubectl describe networkpolicy backend-policy
+```
+
+Explain
+
+Only frontend Pods
+
+↓
+
+Backend Pods
+
+Other Pods
+
+↓
+
+Blocked
+
+Requires
+
+Calico
+
+or
+
+Cilium
+
+---
+
+# Phase 10 – Open Application
+
+Open Frontend
+
+```bash
+minikube service frontend-service
+```
+
+OR
+
+```bash
+minikube service frontend-service --url
+```
+
+Browser
+
+↓
+
+Frontend
+
+↓
+
+NGINX Reverse Proxy
+
+↓
+
+backend-service
+
+↓
+
+CoreDNS
+
+↓
+
+ClusterIP
+
+↓
+
+kube-proxy
+
+↓
+
+EndpointSlice
+
+↓
+
+Backend Pods
+
+↓
+
+MongoDB Atlas
+
+---
+
+# Useful Commands
 
 ```bash
 kubectl get all
@@ -465,33 +592,83 @@ kubectl get all
 
 ---
 
-## Delete All Resources from YAML
-
 ```bash
-kubectl delete -f kubernetes/
+kubectl get pods -o wide
 ```
 
 ---
 
-## Apply All YAML Files
-
 ```bash
-kubectl apply -f kubernetes/
+kubectl get svc
 ```
 
 ---
 
-## Reapply Updated Configuration
-
 ```bash
-kubectl apply -f backend-deployment.yaml
+kubectl get endpoints
 ```
 
 ---
 
-# Debugging Commands
+```bash
+kubectl get endpointslice
+```
 
-## View Events
+---
+
+```bash
+kubectl describe deployment backend-deployment
+```
+
+---
+
+```bash
+kubectl describe service backend-service
+```
+
+---
+
+```bash
+kubectl logs <pod-name>
+```
+
+---
+
+```bash
+kubectl exec -it <pod-name> -- sh
+```
+
+---
+
+```bash
+kubectl rollout restart deployment backend-deployment
+```
+
+---
+
+```bash
+kubectl rollout history deployment backend-deployment
+```
+
+---
+
+```bash
+kubectl rollout undo deployment backend-deployment
+```
+
+---
+
+```bash
+kubectl delete pod <pod-name>
+```
+
+---
+
+```bash
+kubectl scale deployment backend-deployment --replicas=5
+```
+
+---
 
 ```bash
 kubectl get events
@@ -499,134 +676,47 @@ kubectl get events
 
 ---
 
-## Sort Events
-
 ```bash
-kubectl get events --sort-by=.metadata.creationTimestamp
-```
-
----
-
-## Show Resource Usage (Requires Metrics Server)
-
-```bash
-kubectl top pods
-
-kubectl top nodes
-```
-
----
-
-# Docker Commands Used with Kubernetes
-
-## Build Images
-
-```bash
-docker compose build
-```
-
----
-
-## Build Without Cache
-
-```bash
-docker compose build --no-cache
-```
-
----
-
-## List Images
-
-```bash
-docker images
-```
-
----
-
-## Remove Image
-
-```bash
-docker rmi homeease-backend:latest
-
-docker rmi homeease-frontend:latest
-```
-
----
-
-## Remove Container
-
-```bash
-docker rm -f <container-id>
-```
-
----
-
-## Run Docker Compose
-
-```bash
-docker compose up
-```
-
----
-
-## Stop Docker Compose
-
-```bash
-docker compose down
-```
-
----
-
-# Typical Development Workflow
-
-```text
-Modify Application Code
-        │
-        ▼
-docker compose build
-        │
-        ▼
-minikube image load
-        │
-        ▼
-kubectl apply -f kubernetes/
-        │
-        ▼
-kubectl get pods
-        │
-        ▼
-kubectl logs
-        │
-        ▼
-minikube service frontend-service
-```
-
----
-
-# Frequently Used Commands
-
-```bash
-kubectl get nodes
-kubectl get pods
-kubectl get deployments
-kubectl get services
-kubectl get replicasets
-kubectl get configmaps
-kubectl get secrets
 kubectl get all
+```
 
-kubectl describe pod <pod-name>
-kubectl logs <pod-name>
-kubectl exec -it <pod-name> -- sh
+---
 
-kubectl rollout restart deployment backend-deployment
-kubectl rollout status deployment backend-deployment
-kubectl rollout history deployment backend-deployment
-kubectl rollout undo deployment backend-deployment
+# Final Architecture
 
-minikube start
-minikube status
-minikube stop
-minikube service frontend-service
-docker compose build
+```
+Browser
+      │
+      ▼
+Ingress
+      │
+      ▼
+Frontend Service (NodePort)
+      │
+      ▼
+Frontend Pods
+      │
+      ▼
+NGINX Reverse Proxy
+      │
+      ▼
+backend-service (ClusterIP)
+      │
+      ▼
+CoreDNS
+      │
+      ▼
+ClusterIP
+      │
+      ▼
+kube-proxy
+      │
+      ▼
+EndpointSlice
+      │
+      ▼
+Backend Pods
+      │
+      ▼
+MongoDB Atlas
 ```

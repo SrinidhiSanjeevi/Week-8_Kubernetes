@@ -5,11 +5,13 @@ metadata:
   name: backend-service
 
 spec:
+  type: ClusterIP
+
   selector:
     app: backend
 
   ports:
-    - port: 5000
+    - name: http
+      protocol: TCP
+      port: 5000
       targetPort: 5000
-
-  type: ClusterIP

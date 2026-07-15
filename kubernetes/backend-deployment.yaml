@@ -14,7 +14,6 @@ spec:
       app: backend
 
   template:
-
     metadata:
       labels:
         app: backend
@@ -22,14 +21,14 @@ spec:
     spec:
       containers:
         - name: backend-container
-          image: homeease-backend:latest
+          image: home-backend:latest
           imagePullPolicy: Never
+
           ports:
             - containerPort: 5000
 
           envFrom:
             - configMapRef:
-               name: backend-config
-
+                name: backend-config
             - secretRef:
-               name: backend-secret
+                name: backend-secret
